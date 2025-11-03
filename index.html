@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Hasina Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    
+    #gameContainer {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+    }
+    
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251103-WA0001-J5FqYeFNsrrlk7wuZA9S42iro6VIcU.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    /* Added start screen overlay */
+    #startScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      gap: 30px;
+    }
+
+    #startScreen.hidden {
+      display: none;
+    }
+
+    #startScreen h1 {
+      color: white;
+      font-size: 64px;
+      font-weight: bold;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    #startScreen button {
+      padding: 20px 50px;
+      font-size: 24px;
+      background: #FF6B6B;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    #startScreen button:hover {
+      background: #FF5252;
+    }
+
+    #instructions {
+      color: white;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    /* Added styles for score display during gameplay */
+    #scoreDisplay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 107, 107, 0.9);
+      padding: 15px 25px;
+      border-radius: 10px;
+      color: white;
+      font-size: 28px;
+      font-weight: bold;
+      z-index: 50;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    #scoreDisplay.show {
+      display: block;
+    }
+
+    /* Added styles for game title */
+    #gameTitle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+      z-index: 50;
+    }
+
+    /* Added music control button styles */
+    #musicToggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 107, 107, 0.9);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 50;
+      transition: background 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    #musicToggle:hover {
+      background: rgba(255, 82, 82, 0.9);
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <!-- Added game title "TASH" and score display -->
+    <div id="gameTitle">TASH</div>
+    <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
+    
+    <!-- Added audio element for background music -->
+    <audio id="bgMusic" loop>
+      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fahad-ahmed-dj-tonu_joy-bangla-jitbe-abar-nouka-dj-tonu-67bgmqfhFVSUs32KrtkKE1Qion2iSr.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Added music toggle button -->
+    <button id="musicToggle" onclick="toggleMusic()">🔊 Music ON</button>
+
+    <div id="startScreen">
+      <h1>TASH</h1>
+      <button onclick="startGame()">START GAME</button>
+      <div id="instructions">
+        <p>Press SPACE or Click to Make the Bird Jump</p>
+        <p>Avoid the Rocks!</p>
+      </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <script>
+    // Bird properties
+    const bird = {
+      x: 50,
+      y: 150,
+      width: 40,
+      height: 40,
+      velocity: 0,
+      gravity: 0.25,
+      jump: -6
+    };
+
+    // Game properties
+    const game = {
+      speed: 3,
+      pipeGap: 180,
+      pipeWidth: 80,
+      pipeFrequency: 90,
+      score: 0,
+      gameOver: false,
+      gameStarted: false,
+      hasScored: new Set()
+    };
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let pipes = [];
+    let frameCount = 0;
+
+    // Load images
+    const birdImg = new Image();
+    birdImg.src = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251102-WA0001-eQLBZQWWzZeJLl1E38zN4ixUWDAPIT.jpg';
+    birdImg.crossOrigin = 'anonymous';
+
+    const pipeImg = new Image();
+    pipeImg.src = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251102-WA0003-2oWMyZARpQx8l69PtIXloo0pRnol6Z.jpg';
+    pipeImg.crossOrigin = 'anonymous';
+
+    function drawBird() {
+      if (birdImg.complete) {
+        ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+      }
+    }
+
+    function drawRock(x, y, width, height) {
+      ctx.fillStyle = '#8B7355';
+      ctx.beginPath();
+      ctx.moveTo(x, y + height * 0.3);
+      ctx.lineTo(x + width * 0.3, y);
+      ctx.lineTo(x + width * 0.7, y + height * 0.1);
+      ctx.lineTo(x + width, y + height * 0.2);
+      ctx.lineTo(x + width * 0.8, y + height * 0.6);
+      ctx.lineTo(x + width * 0.9, y + height);
+      ctx.lineTo(x + width * 0.1, y + height);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#654321';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Add some rock texture details
+      ctx.fillStyle = '#A0826D';
+      ctx.fillRect(x + width * 0.2, y + height * 0.3, width * 0.3, height * 0.2);
+      ctx.fillRect(x + width * 0.5, y + height * 0.5, width * 0.3, height * 0.2);
+    }
+
+    function drawPipe(pipe) {
+      if (pipeImg.complete) {
+        // Top pipe
+        ctx.drawImage(pipeImg, pipe.x, pipe.topY, game.pipeWidth, pipe.topHeight);
+        
+        // Bottom pipe
+        ctx.drawImage(pipeImg, pipe.x, pipe.bottomY, game.pipeWidth, pipe.bottomHeight);
+      } else {
+        // Fallback to rocks if image not loaded
+        drawRock(pipe.x, pipe.topY, game.pipeWidth, pipe.topHeight);
+        drawRock(pipe.x, pipe.bottomY, game.pipeWidth, pipe.bottomHeight);
+      }
+    }
+
+    function createPipe() {
+      const minHeight = 50;
+      const maxHeight = canvas.height - game.pipeGap - minHeight;
+      const topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+      const bottomHeight = canvas.height - topHeight - game.pipeGap;
+      
+      return {
+        x: canvas.width,
+        topY: 0,
+        topHeight: topHeight,
+        bottomY: topHeight + game.pipeGap,
+        bottomHeight: bottomHeight
+      };
+    }
+
+    function checkCollision(pipe) {
+      if (
+        bird.x < pipe.x + game.pipeWidth &&
+        bird.x + bird.width > pipe.x &&
+        (bird.y < pipe.topHeight || bird.y + bird.height > pipe.bottomY)
+      ) {
+        return true;
+      }
+      return false;
+    }
+
+    function update() {
+      if (!game.gameStarted) return;
+
+      if (!game.gameOver) {
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+
+        frameCount++;
+        if (frameCount % game.pipeFrequency === 0) {
+          pipes.push(createPipe());
+        }
+
+        pipes = pipes.filter(pipe => pipe.x > -game.pipeWidth);
+
+        pipes.forEach(pipe => {
+          pipe.x -= game.speed;
+
+          const pipeCenter = pipe.x + game.pipeWidth / 2;
+          const birdCenter = bird.x + bird.width / 2;
+
+          if (
+            pipeCenter < birdCenter &&
+            pipeCenter + 1 >= birdCenter &&
+            !game.hasScored.has(pipe)
+          ) {
+            game.score++;
+            game.hasScored.add(pipe);
+          }
+
+          if (checkCollision(pipe)) {
+            game.gameOver = true;
+          }
+        });
+
+        if (bird.y + bird.height > canvas.height || bird.y < 0) {
+          game.gameOver = true;
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      pipes.forEach(drawPipe);
+      drawBird();
+
+      const scoreDisplay = document.getElementById('scoreDisplay');
+      const scoreValue = document.getElementById('scoreValue');
+      
+      if (game.gameStarted && !game.gameOver) {
+        scoreDisplay.classList.add('show');
+        scoreValue.textContent = game.score;
+      } else {
+        scoreDisplay.classList.remove('show');
+      }
+
+      if (game.gameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+        ctx.font = '32px Arial';
+        ctx.fillText('Final Score: ' + game.score, canvas.width / 2, canvas.height / 2 + 40);
+        ctx.fillText('Click or Press SPACE to Restart', canvas.width / 2, canvas.height / 2 + 100);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Music control variables and functions
+    let musicEnabled = true;
+    const bgMusic = document.getElementById('bgMusic');
+    const musicToggle = document.getElementById('musicToggle');
+
+    function toggleMusic() {
+      musicEnabled = !musicEnabled;
+      if (musicEnabled) {
+        bgMusic.play();
+        musicToggle.textContent = '🔊 Music ON';
+      } else {
+        bgMusic.pause();
+        musicToggle.textContent = '🔇 Music OFF';
+      }
+    }
+
+    function startGame() {
+      document.getElementById('startScreen').classList.add('hidden');
+      game.gameStarted = true;
+      game.gameOver = false;
+      
+      if (musicEnabled) {
+        bgMusic.play();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!game.gameStarted) {
+          startGame();
+        } else if (game.gameOver) {
+          bird.y = 150;
+          bird.velocity = 0;
+          pipes = [];
+          game.score = 0;
+          game.gameOver = false;
+          game.hasScored.clear();
+          frameCount = 0;
+        } else {
+          bird.velocity = bird.jump;
+        }
+      }
+    });
+
+    canvas.addEventListener('click', () => {
+      if (!game.gameStarted) {
+        startGame();
+      } else if (game.gameOver) {
+        bird.y = 150;
+        bird.velocity = 0;
+        pipes = [];
+        game.score = 0;
+        game.gameOver = false;
+        game.hasScored.clear();
+        frameCount = 0;
+      } else {
+        bird.velocity = bird.jump;
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    gameLoop();
+  </script>
+</body>
+</html>
