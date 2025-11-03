@@ -142,7 +142,7 @@
 <body>
   <div id="gameContainer">
     <!-- Added game title "TASH" and score display -->
-    <div id="gameTitle">Flappy Hasina on Fire by Pagla</div>
+    <div id="gameTitle">Flappy Hasina </div>
     <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
     
     <!-- Added audio element for background music -->
@@ -164,7 +164,7 @@
     </audio>
 
     <div id="startScreen">
-      <h1>TASH</h1>
+      <h1>Flappy Hasina</h1>
       <button onclick="startGame()">START GAME</button>
       <div id="instructions">
         <p>Press SPACE or Click to Make the Bird Jump</p>
@@ -181,8 +181,8 @@
     const bird = {
       x: 50,
       y: 150,
-      width: 70,
-      height: 70,
+      width: 40,
+      height: 40,
       velocity: 0,
       gravity: 0.15,
       jump: -5
@@ -191,8 +191,8 @@
     // Game properties
     const game = {
       speed: 1,
-      pipeGap: 320,
-      pipeWidth: 60,
+      pipeGap: 220,
+      pipeWidth: 80,
       pipeFrequency: 120,
       score: 0,
       gameOver: false,
