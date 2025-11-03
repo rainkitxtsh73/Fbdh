@@ -142,7 +142,7 @@
 <body>
   <div id="gameContainer">
     <!-- Added game title "TASH" and score display -->
-    <div id="gameTitle">TASH</div>
+    <div id="gameTitle">Flappy Hasina on Fire by Pagla</div>
     <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
     
     <!-- Added audio element for background music -->
@@ -181,8 +181,8 @@
     const bird = {
       x: 50,
       y: 150,
-      width: 40,
-      height: 40,
+      width: 70,
+      height: 70,
       velocity: 0,
       gravity: 0.15,
       jump: -5
@@ -190,9 +190,9 @@
 
     // Game properties
     const game = {
-      speed: 2,
-      pipeGap: 220,
-      pipeWidth: 80,
+      speed: 1,
+      pipeGap: 320,
+      pipeWidth: 60,
       pipeFrequency: 120,
       score: 0,
       gameOver: false,
@@ -213,7 +213,7 @@
 
     // Load images
     const birdImg = new Image();
-    birdImg.src = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251103-WA0003-yC8syNSbDdw3YtBNOujVKT2K0neC7G.jpg'; // Updated bird image URL
+    birdImg.src = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251103-WA0005-YmZuHdOsTDyY72JucS93RLQF65OV8O.jpg'; // Updated bird image URL
     birdImg.crossOrigin = 'anonymous';
 
     const pipeImg = new Image();
