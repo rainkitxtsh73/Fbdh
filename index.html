@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Hasina Game</title>
+  <title>Flappy Bird Game</title>
   <style>
     * {
       margin: 0;
@@ -147,11 +147,21 @@
     
     <!-- Added audio element for background music -->
     <audio id="bgMusic" loop>
-      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fahad-ahmed-dj-tonu_joy-bangla-jitbe-abar-nouka-dj-tonu-67bgmqfhFVSUs32KrtkKE1Qion2iSr.mp3" type="audio/mpeg">
+      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/FEIN%20x%20Joy%20Bangla_1762177762653.mp3-Q8KyXVHiZqtBEA38LFLIPZEu7bf1bP.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Added music toggle button -->
     <button id="musicToggle" onclick="toggleMusic()">🔊 Music ON</button>
+
+    <!-- Added victory sound audio element -->
+    <audio id="victorySound">
+      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Election%20theme%20song%20of%20Bangladesh%20Awami%20League%202018%20%20Joy%20Bangla%20Jitbe%20Abar%20Nouka%20mr%20adda%20buzz_1762177079808%282%29-G5bNYsxi8vK1c4Dh4TKaRxJ9sZiqms.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Added death music audio element -->
+    <audio id="deathMusic">
+      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bongoboltu%20more%20nai%20%F0%9F%97%A3%EF%B8%8F_1762169693786.mp3-rt4abLrMwFllxqW8r3vs7qqqmSaf7D.mp3" type="audio/mpeg">
+    </audio>
 
     <div id="startScreen">
       <h1>TASH</h1>
@@ -159,6 +169,8 @@
       <div id="instructions">
         <p>Press SPACE or Click to Make the Bird Jump</p>
         <p>Avoid the Rocks!</p>
+        <!-- Updated instructions to show win condition -->
+        <p>Survive 10 Pipes to WIN!</p>
       </div>
     </div>
     <canvas id="gameCanvas"></canvas>
@@ -172,20 +184,23 @@
       width: 40,
       height: 40,
       velocity: 0,
-      gravity: 0.25,
-      jump: -6
+      gravity: 0.15,
+      jump: -5
     };
 
     // Game properties
     const game = {
-      speed: 3,
-      pipeGap: 180,
+      speed: 2,
+      pipeGap: 220,
       pipeWidth: 80,
-      pipeFrequency: 90,
+      pipeFrequency: 120,
       score: 0,
       gameOver: false,
       gameStarted: false,
-      hasScored: new Set()
+      hasScored: new Set(),
+      totalPipes: 10,
+      winThreshold: 10,
+      isWon: false
     };
 
     const canvas = document.getElementById('gameCanvas');
@@ -198,7 +213,7 @@
 
     // Load images
     const birdImg = new Image();
-    birdImg.src = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251102-WA0001-eQLBZQWWzZeJLl1E38zN4ixUWDAPIT.jpg';
+    birdImg.src = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG-20251103-WA0003-yC8syNSbDdw3YtBNOujVKT2K0neC7G.jpg'; // Updated bird image URL
     birdImg.crossOrigin = 'anonymous';
 
     const pipeImg = new Image();
@@ -276,7 +291,7 @@
     function update() {
       if (!game.gameStarted) return;
 
-      if (!game.gameOver) {
+      if (!game.gameOver && !game.isWon) {
         bird.velocity += bird.gravity;
         bird.y += bird.velocity;
 
@@ -290,25 +305,37 @@
         pipes.forEach(pipe => {
           pipe.x -= game.speed;
 
-          const pipeCenter = pipe.x + game.pipeWidth / 2;
-          const birdCenter = bird.x + bird.width / 2;
-
           if (
-            pipeCenter < birdCenter &&
-            pipeCenter + 1 >= birdCenter &&
+            pipe.x + game.pipeWidth < bird.x &&
+            pipe.x + game.pipeWidth + game.speed >= bird.x &&
             !game.hasScored.has(pipe)
           ) {
             game.score++;
             game.hasScored.add(pipe);
+            console.log("[v0] Score increased to: " + game.score);
+            
+            if (game.score >= game.winThreshold) {
+              game.isWon = true;
+              console.log("[v0] Player won with score: " + game.score);
+              bgMusic.pause();
+              bgMusic.currentTime = 0;
+              document.getElementById('victorySound').play();
+            }
           }
 
           if (checkCollision(pipe)) {
             game.gameOver = true;
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            document.getElementById('deathMusic').play();
           }
         });
 
         if (bird.y + bird.height > canvas.height || bird.y < 0) {
           game.gameOver = true;
+          bgMusic.pause();
+          bgMusic.currentTime = 0;
+          document.getElementById('deathMusic').play();
         }
       }
     }
@@ -322,14 +349,26 @@
       const scoreDisplay = document.getElementById('scoreDisplay');
       const scoreValue = document.getElementById('scoreValue');
       
-      if (game.gameStarted && !game.gameOver) {
+      if (game.gameStarted && !game.gameOver && !game.isWon) {
         scoreDisplay.classList.add('show');
         scoreValue.textContent = game.score;
       } else {
         scoreDisplay.classList.remove('show');
       }
 
-      if (game.gameOver) {
+      if (game.isWon) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 64px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('YOU WIN!', canvas.width / 2, canvas.height / 2 - 60);
+        ctx.fillStyle = '#fff';
+        ctx.font = '36px Arial';
+        ctx.fillText('Final Score: ' + game.score, canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText('Click or Press SPACE to Restart', canvas.width / 2, canvas.height / 2 + 80);
+        ctx.textAlign = 'left';
+      } else if (game.gameOver) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
@@ -353,6 +392,7 @@
     let musicEnabled = true;
     const bgMusic = document.getElementById('bgMusic');
     const musicToggle = document.getElementById('musicToggle');
+    const deathMusic = document.getElementById('deathMusic');
 
     function toggleMusic() {
       musicEnabled = !musicEnabled;
@@ -369,10 +409,21 @@
       document.getElementById('startScreen').classList.add('hidden');
       game.gameStarted = true;
       game.gameOver = false;
+      game.isWon = false;
+      game.score = 0;
+      game.hasScored.clear();
+      pipes = [];
+      frameCount = 0;
+      
+      bird.y = 150;
+      bird.velocity = 0;
       
       if (musicEnabled) {
+        bgMusic.currentTime = 0;
         bgMusic.play();
       }
+      deathMusic.pause();
+      deathMusic.currentTime = 0;
     }
 
     document.addEventListener('keydown', (e) => {
@@ -380,14 +431,23 @@
         e.preventDefault();
         if (!game.gameStarted) {
           startGame();
-        } else if (game.gameOver) {
+        } else if (game.gameOver || game.isWon) {
           bird.y = 150;
           bird.velocity = 0;
           pipes = [];
           game.score = 0;
           game.gameOver = false;
+          game.isWon = false;
           game.hasScored.clear();
           frameCount = 0;
+          document.getElementById('victorySound').pause();
+          document.getElementById('victorySound').currentTime = 0;
+          document.getElementById('deathMusic').pause();
+          document.getElementById('deathMusic').currentTime = 0;
+          if (musicEnabled) {
+            bgMusic.currentTime = 0;
+            bgMusic.play();
+          }
         } else {
           bird.velocity = bird.jump;
         }
@@ -397,14 +457,23 @@
     canvas.addEventListener('click', () => {
       if (!game.gameStarted) {
         startGame();
-      } else if (game.gameOver) {
+      } else if (game.gameOver || game.isWon) {
         bird.y = 150;
         bird.velocity = 0;
         pipes = [];
         game.score = 0;
         game.gameOver = false;
+        game.isWon = false;
         game.hasScored.clear();
         frameCount = 0;
+        document.getElementById('victorySound').pause();
+        document.getElementById('victorySound').currentTime = 0;
+        document.getElementById('deathMusic').pause();
+        document.getElementById('deathMusic').currentTime = 0;
+        if (musicEnabled) {
+          bgMusic.currentTime = 0;
+          bgMusic.play();
+        }
       } else {
         bird.velocity = bird.jump;
       }
